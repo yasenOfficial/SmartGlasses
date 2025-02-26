@@ -42,6 +42,7 @@ This is a React Native application built using Expo. The app features a bottom t
 .
 ├── .expo/               # Expo-related configuration files
 ├── .vscode/             # VS Code workspace settings
+├── screens/             # Screen components after click home buttons
 ├── App.js               # Main entry point
 ├── babel.config.js      # Babel configuration file
 ├── package.json         # Project metadata and dependencies
