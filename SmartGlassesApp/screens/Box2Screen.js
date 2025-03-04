@@ -9,32 +9,33 @@ import {
   ScrollView,
 } from 'react-native';
 import { Agenda } from 'react-native-calendars';
+import styles from './Box2Screen.styles';
 
 const EventItem = memo(({ item }) => {
   return (
-    <TouchableOpacity>
-      <Text>{item.name}</Text>
-      <Text>{item.data}</Text>
+    <TouchableOpacity style={styles.item}>
+      <Text style={styles.itemText}>{item.name}</Text>
+      <Text style={styles.itemText}>{item.data}</Text>
     </TouchableOpacity>
   );
 });
 
 const EmptyDateComponent = memo(() => {
   return (
-    <View>
-      <Text>You don't have any tasks for this day</Text>
+    <View style={styles.emptyDate}>
+      <Text style={styles.emptyDateText}>You don't have any tasks for this day</Text>
     </View>
   );
 });
 
 function App() {
   const [items, setItems] = useState({
-    '2024-03-26': [{name: 'Meeting 1', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
-    '2024-03-28': [{name: 'Meeting 2', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
-    '2024-03-29': [{name: 'Meeting 3', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
-    '2024-03-30': [{name: 'Meeting 4', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
-    '2024-03-31': [{name: 'Meeting 5', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
-    '2024-03-25': [{name: 'Meeting 6', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}]
+    '2025-03-04': [{name: 'Meeting 1', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
+    '2025-03-28': [{name: 'Meeting 2', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
+    '2025-03-29': [{name: 'Meeting 3', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
+    '2025-03-30': [{name: 'Meeting 4', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
+    '2025-03-31': [{name: 'Meeting 5', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}],
+    '2025-03-25': [{name: 'Meeting 6', data:'Lorem ipsum, or lipsum as it is sometimes known, is dummy text used in laying out print, graphic or web designs. '}]
   });
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -66,6 +67,7 @@ function App() {
     }
 
     const formattedDate = formatDate(selectedDate);
+    
     const updatedItems = {...items};
     
     if (updatedItems[formattedDate]) {
@@ -78,6 +80,7 @@ function App() {
     }
     
     setItems(updatedItems);
+    
     setEventName('');
     setEventData('');
     setModalVisible(false);
@@ -122,11 +125,14 @@ function App() {
   }, []);
 
   return (
-    <SafeAreaView>
-      <View>
-        <Text>Calendar Events</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Text>+ Add Event</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Calendar Events</Text>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={styles.addButtonText}>+ Add Event</Text>
         </TouchableOpacity>
       </View>
 
@@ -148,20 +154,22 @@ function App() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View>
-          <View>
-            <Text>Add New Event</Text>
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Add New Event</Text>
             
-            <ScrollView>
-              <Text>Event Name:</Text>
+            <ScrollView style={styles.formContainer}>
+              <Text style={styles.label}>Event Name:</Text>
               <TextInput
+                style={styles.input}
                 value={eventName}
                 onChangeText={setEventName}
                 placeholder="Enter event name"
               />
               
-              <Text>Event Description:</Text>
+              <Text style={styles.label}>Event Description:</Text>
               <TextInput
+                style={[styles.input, styles.textArea]}
                 value={eventData}
                 onChangeText={setEventData}
                 placeholder="Enter event description"
@@ -169,19 +177,28 @@ function App() {
                 numberOfLines={4}
               />
               
-              <Text>Date:</Text>
-              <TouchableOpacity onPress={() => setShowDateSelector(true)}>
+              <Text style={styles.label}>Date:</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDateSelector(true)}
+              >
                 <Text>{selectedDate.toDateString()}</Text>
               </TouchableOpacity>
             </ScrollView>
             
-            <View>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text>Cancel</Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonCancel]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity onPress={addEvent}>
-                <Text>Save Event</Text>
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSave]}
+                onPress={addEvent}
+              >
+                <Text style={styles.buttonText}>Save Event</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -195,55 +212,90 @@ function App() {
           visible={showDateSelector}
           onRequestClose={() => setShowDateSelector(false)}
         >
-          <View>
-            <View>
-              <Text>Select Date</Text>
+          <View style={styles.centeredView}>
+            <View style={styles.dateSelectorModal}>
+              <Text style={styles.modalTitle}>Select Date</Text>
               
-              <View>
-                <View>
-                  <Text>Year</Text>
-                  <ScrollView>
+              <View style={styles.dateSelectors}>
+                <View style={styles.selectorContainer}>
+                  <Text style={styles.selectorLabel}>Year</Text>
+                  <ScrollView style={styles.selector}>
                     {years.map(year => (
                       <TouchableOpacity 
                         key={`year-${year}`}
+                        style={[
+                          styles.selectorItem, 
+                          selectorYear === year && styles.selectedItem
+                        ]}
                         onPress={() => setSelectorYear(year)}
                       >
-                        <Text>{year}</Text>
+                        <Text 
+                          style={selectorYear === year ? styles.selectedItemText : null}
+                        >
+                          {year}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
                 </View>
                 
-                <View>
-                  <Text>Month</Text>
-                  <ScrollView>
+                <View style={styles.selectorContainer}>
+                  <Text style={styles.selectorLabel}>Month</Text>
+                  <ScrollView style={styles.selector}>
                     {months.map(month => (
                       <TouchableOpacity 
                         key={`month-${month.index}`}
+                        style={[
+                          styles.selectorItem, 
+                          selectorMonth === month.index && styles.selectedItem
+                        ]}
                         onPress={() => setSelectorMonth(month.index)}
                       >
-                        <Text>{month.name}</Text>
+                        <Text 
+                          style={selectorMonth === month.index ? styles.selectedItemText : null}
+                        >
+                          {month.name}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
                 </View>
               </View>
               
-              <Text>Day</Text>
-              <View>
+              <Text style={styles.selectorLabel}>Day</Text>
+              <View style={styles.daysContainer}>
                 {days.map(day => (
                   <TouchableOpacity 
                     key={`day-${day}`}
+                    style={[
+                      styles.dayItem,
+                      selectedDate.getDate() === day && 
+                      selectedDate.getMonth() === selectorMonth && 
+                      selectedDate.getFullYear() === selectorYear && 
+                      styles.selectedDayItem
+                    ]}
                     onPress={() => selectDate(day)}
                   >
-                    <Text>{day}</Text>
+                    <Text 
+                      style={
+                        selectedDate.getDate() === day && 
+                        selectedDate.getMonth() === selectorMonth && 
+                        selectedDate.getFullYear() === selectorYear ? 
+                        styles.selectedItemText : null
+                      }
+                    >
+                      {day}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
               
-              <View>
-                <TouchableOpacity onPress={() => setShowDateSelector(false)}>
-                  <Text>Cancel</Text>
+              <View style={styles.datePickerButtonContainer}>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonCancel]}
+                  onPress={() => setShowDateSelector(false)}
+                >
+                  <Text style={styles.buttonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -252,6 +304,6 @@ function App() {
       )}
     </SafeAreaView>
   );
-}
+};
 
-export default App; 
+export default App;

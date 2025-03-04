@@ -12,6 +12,7 @@ import Box1Screen from "./screens/Box1Screen";
 import Box2Screen from "./screens/Box2Screen";
 import Box3Screen from "./screens/Box3Screen";
 import Box4Screen from "./screens/Box4Screen";
+import BLEConnection from "./screens/BLEConnection";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -86,10 +87,11 @@ function HomeScreen({ isConnected, navigation }) {
 }
 
 
-function SettingsScreen({ setIsConnected }) {
+function SettingsScreen({ setIsConnected, navigation }) {
   const handlePress = () => {
     setIsConnected(true);
     Alert.alert("Connected!");
+    navigation.navigate('BLEConnection');
   };
 
   return (
@@ -112,7 +114,7 @@ function SettingsScreen({ setIsConnected }) {
         }}
         onPress={handlePress}
       >
-        <Image source={{ uri: "https://via.placeholder.com/200" }} style={{ width: "100%", height: "100%" }} />
+        <Image source={{ uri: "https://cdn-icons-png.flaticon.com/512/5248/5248981.png" }} style={{ width: "100%", height: "100%" }} />
       </TouchableOpacity>
     </ScreenWrapper>
   );
@@ -128,6 +130,7 @@ function HomeStack({ isConnected }) {
       <Stack.Screen name="Box2" component={Box2Screen} />
       <Stack.Screen name="Box3" component={Box3Screen} />
       <Stack.Screen name="Box4" component={Box4Screen} />
+      <Stack.Screen name="BLEConnection" component={BLEConnection} />
     </Stack.Navigator>
   );
 }
@@ -151,9 +154,8 @@ function AnimatedTabBar({ state, descriptors, navigation }) {
         useNativeDriver: true,
       }).start();
 
-      // Keep the scale for the selected tab
       Animated.timing(scaleAnimations[i], {
-        toValue: i === index ? 1.2 : 1, // Stay bigger when focused
+        toValue: i === index ? 1.2 : 1,
         duration: 200,
         useNativeDriver: true,
       }).start();
@@ -216,7 +218,9 @@ export default function App() {
       <NavigationContainer>
         <Tab.Navigator tabBar={(props) => <AnimatedTabBar {...props} />} screenOptions={{ headerShown: false }}>
           <Tab.Screen name="HomeStack">{() => <HomeStack isConnected={isConnected} />}</Tab.Screen>
-          <Tab.Screen name="Settings">{() => <SettingsScreen setIsConnected={setIsConnected} />}</Tab.Screen>
+          <Tab.Screen name="Settings">
+            {({ navigation }) => <SettingsScreen setIsConnected={setIsConnected} navigation={navigation} />}
+          </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
     </PaperProvider>
