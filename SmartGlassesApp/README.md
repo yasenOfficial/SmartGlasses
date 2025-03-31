@@ -1,71 +1,45 @@
-# React Native App with Bottom Tab Navigation
+# test-bluetooh-low-energy-react-native
+Project for demonstrate the use of Bluetooh Low Energy with React Native.
 
-## Overview
+Video demonstration: https://youtu.be/NkNMT-esVKY
 
-This is a React Native application built using Expo. The app features a bottom tab navigation with two screens: Home and Settings. The Home screen displays animated buttons, and the Settings screen allows users to simulate a connection process.
+-React Native
 
-## Features
+-Java
 
-- **Bottom Tab Navigation**: Navigation between Home and Settings screens using `@react-navigation/bottom-tabs`.
-- **Animated Buttons**: The Home screen displays buttons with fade-in animations.
-- **Connectivity Simulation**: The Settings screen allows users to "connect" by clicking an image.
-- **React Native Paper**: UI components styled using `react-native-paper`.
-- **Icons**: Uses `@expo/vector-icons` for tab bar icons.
+-Android
 
-## Installation
+-BLE-Bluetooh Low Energy
 
-### Prerequisites
+-Expo
 
-- Node.js installed
-- Expo CLI installed (`npm install -g expo-cli`)
+GitHub Repositorie: github.com/antoniovini47/test-bluetooh-low-energy-react-native
 
-### Steps
+Project for reference: github.com/dotintent/react-native-ble-plx
 
-1. Clone the repository:
-   ```sh
-   git clone https://github.com/yasenOfficial/SmartGlasses.git
-   cd SmartGlassesApp
-   ```
-2. Install dependencies:
-   ```sh
+Tutorial: expo.dev/blog/how-to-build-a-bluetooth-low-energy-powered-expo-app
+
+# Expo app 👋
+
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+
+## Get started
+
+1. Install dependencies
+
+   ```bash
    npm install
    ```
-3. Start the Expo development server:
-   ```sh
-   npx expo start -c
+
+2. Start the app
+
+   ```bash
+    npx expo start
    ```
-4. Scan the QR code with the Expo Go app on your mobile device or use an emulator.
 
-## Project Structure
+In the output, you'll find options to open the app in a
 
-```
-.
-├── .expo/               # Expo-related configuration files
-├── .vscode/             # VS Code workspace settings
-├── screens/             # Screen components after click home buttons
-├── App.js               # Main entry point
-├── babel.config.js      # Babel configuration file
-├── package.json         # Project metadata and dependencies
-├── package-lock.json    # Locked dependency versions
-└── README.md            # Project documentation
-```
-
-## Dependencies
-
-- `react-native`
-- `expo`
-- `react-navigation`
-- `react-native-paper`
-- `@expo/vector-icons`
-
-## Screens
-
-### Home Screen
-
-- Displays four buttons (GPT, Spotify, Web Cam, Maps) with animation.
-- Buttons only respond if the user is "connected".
-
-### Settings Screen
-
-- Displays an image button that sets the "connected" state when clicked.
-- Once connected, the Home screen buttons become functional.
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo

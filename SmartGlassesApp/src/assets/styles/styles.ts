@@ -1,0 +1,140 @@
+import { StyleSheet } from "react-native";
+import theme from "./theme";
+
+const styles = StyleSheet.create({
+  containerScreen: {
+    flex: 1,
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    gap: theme.spacing.md,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.neutral.lightest,
+  },
+  containerMain: {
+    flex: 1,
+    flexDirection: "column",
+    backgroundColor: theme.colors.neutral.white,
+  },
+  containerDevices: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.neutral.white,
+    borderRadius: theme.borders.radius.lg,
+    ...theme.shadows.sm,
+  },
+  containerButtons: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
+    padding: theme.spacing.lg,
+    marginVertical: theme.spacing.md,
+    backgroundColor: theme.colors.neutral.lighter,
+    borderRadius: theme.borders.radius.md,
+  },
+  containerConnectedDevice: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "center",
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.success.light,
+    borderRadius: theme.borders.radius.lg,
+    marginTop: theme.spacing.md,
+    ...theme.shadows.sm,
+  },
+  viewDevice: {
+    flexDirection: "row",
+    padding: theme.spacing.sm,
+    marginVertical: theme.spacing.xs,
+    borderBottomWidth: theme.borders.width.thin,
+    borderBottomColor: theme.colors.neutral.light,
+  },
+  deviceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    marginVertical: theme.spacing.xs,
+    backgroundColor: theme.colors.neutral.lightest,
+    borderRadius: theme.borders.radius.md,
+    ...theme.shadows.xs,
+  },
+  deviceInfo: {
+    flex: 1,
+    marginRight: theme.spacing.sm,
+  },
+  textTitle: {
+    fontSize: theme.typography.fontSizes["2xl"],
+    textAlign: "center",
+    color: theme.colors.neutral.darkest,
+    marginVertical: theme.spacing.md,
+  },
+  textSubtitle: {
+    fontSize: theme.typography.fontSizes.lg,
+    color: theme.colors.neutral.darker,
+    marginVertical: theme.spacing.sm,
+  },
+  textDeviceName: {
+    fontSize: theme.typography.fontSizes.md,
+    color: theme.colors.neutral.darkest,
+  },
+  textDeviceId: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.neutral.darker,
+    marginTop: theme.spacing.xs,
+  },
+  textEmptyState: {
+    fontSize: theme.typography.fontSizes.md,
+    textAlign: 'center',
+    color: theme.colors.neutral.darker,
+    marginVertical: theme.spacing.lg,
+  },
+  buttonPrimary: {
+    backgroundColor: theme.colors.primary.default,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borders.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.shadows.sm,
+  },
+  buttonSecondary: {
+    backgroundColor: theme.colors.neutral.light,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borders.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: theme.colors.neutral.white,
+    fontSize: theme.typography.fontSizes.md,
+  },
+  buttonTextSecondary: {
+    color: theme.colors.neutral.darkest,
+    fontSize: theme.typography.fontSizes.md,
+  },
+  statusConnected: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: theme.colors.bluetooth.connected,
+    marginRight: theme.spacing.sm,
+  },
+  statusScanning: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: theme.colors.bluetooth.scanning,
+    marginRight: theme.spacing.sm,
+  },
+  animationContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: theme.spacing.lg,
+  },
+});
+
+export default styles;
