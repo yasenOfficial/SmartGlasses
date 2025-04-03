@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, TouchableOpacity, Animated, ScrollView, Alert } from "react-native";
 import { Text, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
+import Button from '../../components/Button';
+import { useBluetooth } from '../../context/BluetoothContext';
+
 
 type ButtonType = {
   text: string;
@@ -20,6 +23,9 @@ export default function HomeScreen() {
     { text: "Step Tracker", color: "#3357FF" },
     { text: "Maps", color: "#FFD700" },
   ]);
+
+  const { isConnected, sendData } = useBluetooth();
+
 
   React.useEffect(() => {
     buttons.forEach((button, index) => {
@@ -104,6 +110,11 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </Animated.View>
         ))}
+        <Button
+          title="Send Data"
+          onPress={() => sendData("Yaska izkupi se")}
+          disabled={!isConnected}
+        />
       </ScrollView>
     </View>
   );

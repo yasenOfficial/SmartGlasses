@@ -1,12 +1,15 @@
 import { Stack } from "expo-router";
+import { BluetoothProvider } from '../context/BluetoothContext';
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen
-        name="(tabs)"
-        options={{ headerShown: false }}
-      />
-    </Stack>
+    <BluetoothProvider>
+      <Stack>
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+        />
+      </Stack>
+    </BluetoothProvider>
   );
 }

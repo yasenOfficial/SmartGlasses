@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Device } from 'react-native-ble-plx';
-import theme from '@assets/styles/theme';
 import Button from './Button';
 
 interface DeviceItemProps {
@@ -36,7 +35,7 @@ export const DeviceItem: React.FC<DeviceItemProps> = ({
 
   return (
     <TouchableOpacity 
-      style={styles.container}
+      style={[styles.container, isConnected && styles.containerConnected]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -79,59 +78,72 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    marginVertical: theme.spacing.xs,
-    backgroundColor: theme.colors.neutral.lightest,
-    borderRadius: theme.borders.radius.md,
-    ...theme.shadows.xs,
+    padding: 16,
+    marginVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  containerConnected: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
   },
   deviceInfo: {
     flex: 1,
-    marginRight: theme.spacing.md,
+    marginRight: 16,
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: theme.spacing.xs,
+    marginBottom: 4,
   },
   deviceName: {
-    fontSize: theme.typography.fontSizes.md,
-    color: theme.colors.neutral.darkest,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
   },
   deviceId: {
-    fontSize: theme.typography.fontSizes.sm,
-    color: theme.colors.neutral.darker,
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
   },
   statusIndicator: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: theme.spacing.sm,
+    marginRight: 8,
   },
   connected: {
-    backgroundColor: theme.colors.bluetooth.connected,
+    backgroundColor: '#10B981',
   },
   disconnected: {
-    backgroundColor: theme.colors.neutral.medium,
+    backgroundColor: '#9CA3AF',
   },
   rssiContainer: {
-    marginTop: theme.spacing.xs,
+    marginTop: 8,
     flexDirection: 'row',
     alignItems: 'center',
   },
   rssiText: {
-    fontSize: theme.typography.fontSizes.sm,
-    color: theme.colors.neutral.darkest,
+    fontSize: 14,
+    color: '#4B5563',
   },
   connectedBadge: {
-    backgroundColor: theme.colors.success.light,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.borders.radius.sm,
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   connectedText: {
-    fontSize: theme.typography.fontSizes.sm,
-    color: theme.colors.success.dark,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#059669',
   },
 });
 

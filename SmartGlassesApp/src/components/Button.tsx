@@ -1,92 +1,82 @@
 import React from 'react';
-import { 
-  TouchableOpacity, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator,
-  TouchableOpacityProps,
-  View
-} from 'react-native';
-import theme from '@assets/styles/theme';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from 'react-native';
 
-interface ButtonProps extends TouchableOpacityProps {
+interface ButtonProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning';
+  onPress: () => void;
+  variant?: 'primary' | 'secondary' | 'outline';
   size?: 'small' | 'medium' | 'large';
-  isLoading?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+const Button: React.FC<ButtonProps> = ({
   title,
+  onPress,
   variant = 'primary',
   size = 'medium',
-  isLoading = false,
-  icon,
-  iconPosition = 'left',
+  disabled = false,
+  loading = false,
   style,
-  disabled,
-  ...rest
+  textStyle,
 }) => {
-  const getBackgroundColor = () => {
-    if (disabled) return theme.colors.neutral.light;
-    
+  const getButtonStyle = () => {
+    const buttonStyles = [styles.button, styles[`${size}Button`]];
+
     switch (variant) {
-      case 'primary': return theme.colors.primary.default;
-      case 'secondary': return theme.colors.secondary.default;
-      case 'success': return theme.colors.success.default;
-      case 'danger': return theme.colors.danger.default;
-      case 'warning': return theme.colors.warning.default;
-      default: return theme.colors.primary.default;
+      case 'primary':
+        buttonStyles.push(styles.primaryButton);
+        break;
+      case 'secondary':
+        buttonStyles.push(styles.secondaryButton);
+        break;
+      case 'outline':
+        buttonStyles.push(styles.outlineButton);
+        break;
     }
+
+    if (disabled) {
+      buttonStyles.push(styles.disabledButton);
+    }
+
+    return buttonStyles;
   };
 
-  const getPadding = () => {
-    switch (size) {
-      case 'small': return { paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.sm };
-      case 'medium': return { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md };
-      case 'large': return { paddingVertical: theme.spacing.md, paddingHorizontal: theme.spacing.lg };
-      default: return { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md };
-    }
-  };
+  const getTextStyle = () => {
+    const textStyles = [styles.text, styles[`${size}Text`]];
 
-  const getFontSize = () => {
-    switch (size) {
-      case 'small': return theme.typography.fontSizes.sm;
-      case 'medium': return theme.typography.fontSizes.md;
-      case 'large': return theme.typography.fontSizes.lg;
-      default: return theme.typography.fontSizes.md;
+    switch (variant) {
+      case 'primary':
+        textStyles.push(styles.primaryText);
+        break;
+      case 'secondary':
+        textStyles.push(styles.secondaryText);
+        break;
+      case 'outline':
+        textStyles.push(styles.outlineText);
+        break;
     }
+
+    if (disabled) {
+      textStyles.push(styles.disabledText);
+    }
+
+    return textStyles;
   };
 
   return (
     <TouchableOpacity
-      style={[
-        styles.button,
-        { backgroundColor: getBackgroundColor() },
-        getPadding(),
-        style,
-      ]}
-      disabled={disabled || isLoading}
-      {...rest}
+      style={[...getButtonStyle(), style]}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
     >
-      {isLoading ? (
-        <ActivityIndicator color={theme.colors.neutral.white} size="small" />
+      {loading ? (
+        <ActivityIndicator color={variant === 'outline' ? '#2563EB' : '#FFFFFF'} />
       ) : (
-        <View style={styles.contentContainer}>
-          {icon && iconPosition === 'left' && <View style={styles.iconLeft}>{icon}</View>}
-          <Text 
-            style={[
-              styles.text, 
-              { fontSize: getFontSize() },
-              disabled && styles.disabledText,
-            ]}
-          >
-            {title}
-          </Text>
-          {icon && iconPosition === 'right' && <View style={styles.iconRight}>{icon}</View>}
-        </View>
+        <Text style={[...getTextStyle(), textStyle]}>{title}</Text>
       )}
     </TouchableOpacity>
   );
@@ -94,28 +84,67 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: theme.borders.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    ...theme.shadows.sm,
+    borderRadius: 8,
   },
-  contentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  smallButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  mediumButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  largeButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  primaryButton: {
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  secondaryButton: {
+    backgroundColor: '#6B7280',
+  },
+  outlineButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#2563EB',
+  },
+  disabledButton: {
+    backgroundColor: '#E5E7EB',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   text: {
-    color: theme.colors.neutral.white,
+    fontWeight: '600',
     textAlign: 'center',
   },
+  smallText: {
+    fontSize: 14,
+  },
+  mediumText: {
+    fontSize: 16,
+  },
+  largeText: {
+    fontSize: 18,
+  },
+  primaryText: {
+    color: '#FFFFFF',
+  },
+  secondaryText: {
+    color: '#FFFFFF',
+  },
+  outlineText: {
+    color: '#2563EB',
+  },
   disabledText: {
-    color: theme.colors.neutral.dark,
-  },
-  iconLeft: {
-    marginRight: theme.spacing.xs,
-  },
-  iconRight: {
-    marginLeft: theme.spacing.xs,
+    color: '#9CA3AF',
   },
 });
 
