@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import { View, StyleSheet, Alert, Image, TouchableOpacity } from "react-native";
 import { Text } from "react-native-paper";
 import { BleManager, Device } from "react-native-ble-plx";
 import { useRouter } from "expo-router";
@@ -18,7 +18,7 @@ export default function MainPage() {
   const [showNameless, setShowNameless] = useState(false);
 
   const isDuplicateDevice = (devices: Device[], nextDevice: Device) =>
-    devices.findIndex((device) => nextDevice.id === device.id) > -1;
+    devices.findIndex((device) => device && nextDevice && device.id === nextDevice.id) > -1;
 
   function scanForPeripherals() {
     setIsScanning(true);
@@ -49,10 +49,11 @@ export default function MainPage() {
 
   async function connectToDevice(device: Device) {
     try {
+      stopScanning(); // Stop scanning when connecting
       const deviceConnection = await bleManager.connectToDevice(device.id);
       await deviceConnection.discoverAllServicesAndCharacteristics();
-      bleManager.stopDeviceScan();
       setConnectedDevice(deviceConnection);
+      setAllDevices([]); // Clear the devices list
       Alert.alert(
         "Success", 
         `Connected to ${device.name || 'device'}. You can now navigate to other pages and send data.`,
@@ -67,6 +68,41 @@ export default function MainPage() {
       console.error("FAILED TO CONNECT", e);
       Alert.alert("Connection Error", "Failed to connect to device");
     }
+  }
+
+  if (connectedDevice) {
+    return (
+      <View style={styles.containerConnected}>
+        <View style={styles.connectedContent}>
+          <TouchableOpacity
+            style={styles.deviceImageContainer}
+            onPress={() => sendData("Yasen ne se kupe")}
+          >
+            <Image 
+              source={{ uri: "https://cdn-icons-png.flaticon.com/512/5248/5248981.png" }} 
+              style={styles.deviceImage} 
+            />
+          </TouchableOpacity>
+          <View style={styles.deviceInfo}>
+            <Text style={styles.deviceName}>{connectedDevice.name || 'Unknown Device'}</Text>
+            <Text style={styles.deviceId}>{connectedDevice.id}</Text>
+            <View style={styles.statusContainer}>
+              <View style={styles.statusDot} />
+              <Text style={styles.statusText}>Connected</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.disconnectButton}
+            onPress={() => {
+              bleManager.cancelDeviceConnection(connectedDevice.id);
+              setConnectedDevice(null);
+            }}
+          >
+            <Text style={styles.disconnectText}>Disconnect</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -110,7 +146,7 @@ export default function MainPage() {
                     key={device.id}
                     device={device}
                     onConnectPress={() => connectToDevice(device)}
-                    isConnected={connectedDevice?.id === device.id}
+                    isConnected={connectedDevice && device ? (connectedDevice as Device).id === device.id : false}
                   />
                 );
               }
@@ -119,26 +155,6 @@ export default function MainPage() {
           )}
         </View>
       </ParallaxScrollView>
-
-      {connectedDevice && (
-        <View style={styles.connectedDeviceContainer}>
-          <Text style={styles.connectedTitle}>Connected Device</Text>
-          <DeviceItem
-            device={connectedDevice}
-            isConnected={true}
-            showRssi={false}
-          />
-          <View style={styles.buttonContainer}>
-            <Button
-              title="Send Test Data"
-              onPress={() => sendData("Yasen ne se kupe")}
-              variant="primary"
-              size="large"
-              style={styles.sendButton}
-            />
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -147,6 +163,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  containerConnected: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    padding: 16,
   },
   header: {
     padding: 16,
@@ -183,23 +205,75 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 24,
   },
-  connectedDeviceContainer: {
-    padding: 16,
+  connectedContent: {
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  connectedTitle: {
-    fontSize: 18,
+  deviceImageContainer: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    overflow: "hidden",
+    backgroundColor: '#E5E7EB',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
+  },
+  deviceImage: {
+    width: "100%",
+    height: "100%",
+  },
+  deviceInfo: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  deviceName: {
+    fontSize: 20,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 12,
   },
-  buttonContainer: {
-    marginTop: 16,
-    gap: 12,
+  deviceId: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
   },
-  sendButton: {
-    width: '100%',
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    marginRight: 8,
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  disconnectButton: {
+    marginTop: 24,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+  },
+  disconnectText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
