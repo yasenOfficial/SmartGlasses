@@ -1,45 +1,47 @@
-# test-bluetooh-low-energy-react-native
-Project for demonstrate the use of Bluetooh Low Energy with React Native.
+# SmartGlassesApp
 
-Video demonstration: https://youtu.be/NkNMT-esVKY
+A React Native application for smart glasses using Expo.
 
--React Native
+## Getting Started
 
--Java
+### Prerequisites
 
--Android
+- Node.js (LTS version recommended)
+- npm or yarn
+- Expo CLI: `npm install -g expo-cli`
+- Mobile device with Expo Go app or emulator
 
--BLE-Bluetooh Low Energy
+### Installation
 
--Expo
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd SmartGlassesApp
+   ```
 
-GitHub Repositorie: github.com/antoniovini47/test-bluetooh-low-energy-react-native
-
-Project for reference: github.com/dotintent/react-native-ble-plx
-
-Tutorial: expo.dev/blog/how-to-build-a-bluetooth-low-energy-powered-expo-app
-
-# Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
+2. Install dependencies:
    ```bash
    npm install
+   # or
+   yarn install
    ```
 
-2. Start the app
-
+3. Start the development server:
    ```bash
-    npx start
+   npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+## Development
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### Project Structure
+
+SmartGlassesApp/
+├── src/
+│ ├── components/ # Reusable UI components
+│ ├── screens/ # Application screens
+│ ├── navigation/ # Navigation configuration
+│ ├── services/ # API and business logic
+│ └── assets/ # Images, fonts, etc.
+├── App.js # Main application component
+├── app.json # Expo configuration
+└── package.json # Dependencies and scripts
