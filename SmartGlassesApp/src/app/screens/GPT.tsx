@@ -15,11 +15,10 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { useBluetooth } from '../../context/BluetoothContext';
+import { OPENAI_API_KEY, OCR_API_KEY } from '@env';
 
-// Use environment variables or a more secure storage solution in production
-const OCR_API_KEY = process.env.OCR_API_KEY || 'YOUR_OCR_API_KEY_HERE';
-// Never hardcode API keys in your source code
-const CHATGPT_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_API_KEY_HERE';
+// Use imported environment variables
+// Don't hardcode API keys in the source code
 
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
@@ -112,7 +111,7 @@ export default function App() {
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${CHATGPT_API_KEY}`
+            Authorization: `Bearer ${OPENAI_API_KEY}`
           }
         }
       );
