@@ -16,10 +16,10 @@ import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { useBluetooth } from '../../context/BluetoothContext';
 
-
-
-const OCR_API_KEY = 'K86177199688957';
-const CHATGPT_API_KEY = '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';
+// Use environment variables or a more secure storage solution in production
+const OCR_API_KEY = process.env.OCR_API_KEY || 'YOUR_OCR_API_KEY_HERE';
+// Never hardcode API keys in your source code
+const CHATGPT_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_API_KEY_HERE';
 
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
