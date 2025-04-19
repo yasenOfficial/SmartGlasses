@@ -51,8 +51,17 @@ export default function HomeScreen() {
           case "GPT":
             router.push("./screens/GPT");
             break;
+
+          case "Maps":
+            router.push("./screens/Maps");
+
+          case "Calendar":
+            router.push("./screens/To_do");
+
+          case "Step Tracker":
+            router.push("./screens/StepTrac");
+
           default:
-            Alert.alert("Button Pressed", `You pressed the ${buttonText} button`);
             break;
         }
       }
