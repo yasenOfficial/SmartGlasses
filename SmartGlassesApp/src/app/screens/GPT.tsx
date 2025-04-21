@@ -15,10 +15,11 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { useBluetooth } from '../../context/BluetoothContext';
-import { OPENAI_API_KEY, OCR_API_KEY } from '@env';
 
-// Use imported environment variables
-// Don't hardcode API keys in the source code
+
+
+const OCR_API_KEY = 'K86177199688957';
+const CHATGPT_API_KEY = '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'; // Your ChatGPT API key
 
 export default function App() {
   const [image, setImage] = useState<string | null>(null);
@@ -59,6 +60,7 @@ export default function App() {
     setLoading(true);
     
     try {
+      // Get base64 data
       const base64Data = file.base64;
       
       if (!base64Data) {
@@ -67,11 +69,12 @@ export default function App() {
         return;
       }
       
+      // OCR.space API accepts base64 images directly
       const formData = new FormData();
       formData.append('apikey', OCR_API_KEY);
       formData.append('base64Image', `data:image/jpeg;base64,${base64Data}`);
       formData.append('language', 'eng');
-      formData.append('OCREngine', '2');
+      formData.append('OCREngine', '2'); // Use the more accurate engine
       
       const response = await fetch('https://api.ocr.space/parse/image', {
         method: 'POST',
@@ -111,32 +114,39 @@ export default function App() {
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${OPENAI_API_KEY}`
+            Authorization: `Bearer ${CHATGPT_API_KEY}`
           }
         }
       );
       const aiReply = res.data.choices[0].message.content;
       
-      const CHUNK_SIZE = 50;
+      // Split the response into chunks of approximately 70 characters
+      const CHUNK_SIZE = 50; // Approximately 12 words worth of characters
       const chunks = [];
       
+      // Split the text into chunks by character count, trying to break at spaces when possible
       let startPos = 0;
       while (startPos < aiReply.length) {
         let endPos = Math.min(startPos + CHUNK_SIZE, aiReply.length);
         
+        // Try to find a space or punctuation to break at if we're not at the end
         if (endPos < aiReply.length) {
+          // Look backward from the calculated end position to find a good break point
           const breakChars = [' ', '.', ',', '!', '?', ';', ':', '\n'];
           let breakFound = false;
           
+          // Search up to 15 characters back for a good break point
           for (let i = 0; i < 15 && endPos - i > startPos; i++) {
             if (breakChars.includes(aiReply[endPos - i])) {
-              endPos = endPos - i + 1;
+              endPos = endPos - i + 1; // Include the break character
               breakFound = true;
               break;
             }
           }
           
+          // If no good break point was found, just use the calculated end position
           if (!breakFound && endPos < aiReply.length) {
+            // If we're in the middle of a word, try to include the whole word
             while (endPos < aiReply.length && aiReply[endPos] !== ' ') {
               endPos++;
             }
@@ -147,18 +157,20 @@ export default function App() {
         startPos = endPos;
       }
       
+      // Send the first chunk immediately
       if (chunks.length > 0 && isConnected) {
         console.log(`Sending chunk 1/${chunks.length} (${chunks[0].length} chars): ${chunks[0]}`);
         sendData(chunks[0]);
       }
       
+      // Send remaining chunks with 6-second delays
       chunks.slice(1).forEach((chunk, index) => {
         setTimeout(() => {
           if (isConnected) {
             console.log(`Sending chunk ${index + 2}/${chunks.length} (${chunk.length} chars): ${chunk}`);
             sendData(chunk);
           }
-        }, (index + 1) * 6000);
+        }, (index + 1) * 6000); // 6 seconds delay between chunks
       });
       
       setAnswer(aiReply);
@@ -215,7 +227,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 40, // pushes heading lower on the screen
     marginBottom: 20,
     color: '#007AFF',
   },
@@ -250,6 +262,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
 
+  // Add these if you switch to TouchableOpacity for more consistent button appearance:
   button: {
     flex: 1,
     backgroundColor: '#007AFF',

@@ -54,12 +54,15 @@ export default function HomeScreen() {
 
           case "Maps":
             router.push("./screens/Maps");
+            break;
 
           case "Calendar":
             router.push("./screens/To_do");
+            break;
 
           case "Step Tracker":
             router.push("./screens/StepTrac");
+            break;
 
           default:
             break;
