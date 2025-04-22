@@ -22,9 +22,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
-const OCR_API_KEY = 'K86177199688957';
-const CHATGPT_API_KEY = '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'; // Your ChatGPT API key
-
+const OCR_API_KEY = '';
+const CHATGPT_API_KEY = ''; // Your ChatGPT API key
 const COLORS = {
   primary: '#6C5CE7',
   primaryDark: '#5D4FFF',
