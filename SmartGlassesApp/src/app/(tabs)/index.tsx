@@ -157,7 +157,7 @@ export default function HomeScreen() {
           <View style={[styles.cardContainer, { marginTop: 20 }]}>
             <Button
               title="Send Data"
-              onPress={() => sendData("Yaska izkupi se")}
+              onPress={() => sendData("Test the glasses")}
               disabled={!isConnected}
               style={styles.sendButton}
             />
