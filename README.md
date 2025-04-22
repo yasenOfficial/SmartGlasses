@@ -13,3 +13,17 @@ This display uses the ST7735 driver and can easily be used with the Adafruit ST7
 
 Battery Management System (BMS): Manages charging of the battery. It is implemented by TP4056, DW01A, FS8205, similarly to the small li-ion 18650 charging modules.
 Mobile Application: The application is written in React Native. More info comming soon. 
+
+The mobile application is developed in React Native and connects to the ESP32 module via Bluetooth, providing extended functionality for the smart glasses system. It consists of four primary features designed for hands-free use and enhanced daily productivity:
+
+ChatGPT Integration: Captures images through the OV2640 Camera Module and sends them to OpenAI’s ChatGPT API. The generated answer is then shown on the internal glasses display, providing real-time assistance based on visual input.
+
+Navigation with Google Maps: Turn-by-turn navigation is handled through Google Maps. Directions are shown on the display shortly before each turn and are automatically removed once passed. This enables seamless pedestrian navigation without needing to check a phone.
+
+Custom Calendar Reminders: A built-in calendar system allows the user to input events manually. A notification is shown on the glasses display 10 minutes before the event occurs, ensuring the user stays on schedule.
+
+Notes: Users can save notes directly through the application, and each note is shown on the display. 
+
+Custom Text Settings: Users can define custom text settings for the display content, enabling personalization of how and what is shown.
+
+All content is projected to one eye through the glasses’ lens, enabling hands-free use that saves time, increases productivity, and helps the user stay on top of their schedule without needing to check a phone.
