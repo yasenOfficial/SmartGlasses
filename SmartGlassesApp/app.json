@@ -14,7 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rotech.bleconnection"
+      "bundleIdentifier": "com.rotech.bleconnection",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show your position on the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location to show your position on the map."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -26,9 +30,16 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.ACCESS_BACKGROUND_LOCATION"
       ],
-      "package": "com.rotech.ble_connection"
+      "package": "com.rotech.ble_connection",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_API_KEY_HERE"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -53,7 +64,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to use your location.",
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
       ]
     ],

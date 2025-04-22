@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBluetooth } from '../../context/BluetoothContext';
 
 const { width } = Dimensions.get('window');
 
@@ -27,12 +28,24 @@ interface Task {
   completed: boolean;
   date: string;
   time?: string;
+  location?: string;
+  reminderSent?: {
+    fiveMinutes: boolean;
+    tenMinutes: boolean;
+    fifteenMinutes: boolean;
+  };
 }
 
 interface CalendarDay {
   date: Date;
   isCurrentMonth: boolean;
   isToday: boolean;
+}
+
+interface CalendarSettings {
+  meetingReminders: boolean;
+  dailyAgenda: boolean;
+  locationBasedReminders: boolean;
 }
 
 const COLORS = {
@@ -52,6 +65,7 @@ const COLORS = {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const To_do: React.FC = () => {
+  const { isConnected, sendData } = useBluetooth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -65,6 +79,13 @@ const To_do: React.FC = () => {
   const [monthCalendarDays, setMonthCalendarDays] = useState<CalendarDay[]>([]);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [upcomingEvents, setUpcomingEvents] = useState<Task[]>([]);
+  const [locationInput, setLocationInput] = useState('');
+  const [editLocationInput, setEditLocationInput] = useState('');
+  const [calendarSettings, setCalendarSettings] = useState<CalendarSettings>({
+    meetingReminders: true,
+    dailyAgenda: true,
+    locationBasedReminders: false,
+  });
   const checkEventsIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousUpcomingEventsRef = useRef<Task[]>([]);
   const alertedEventsRef = useRef<Set<string>>(new Set());
@@ -84,9 +105,255 @@ const To_do: React.FC = () => {
   const [timeInputHour, setTimeInputHour] = useState(initialTime.hour);
   const [timeInputMinute, setTimeInputMinute] = useState(initialTime.minute);
 
+  // Load calendar settings
+  useEffect(() => {
+    const loadCalendarSettings = async () => {
+      try {
+        const storedSettings = await AsyncStorage.getItem('calendarSettings');
+        if (storedSettings) {
+          setCalendarSettings(JSON.parse(storedSettings));
+        }
+      } catch (error) {
+        console.error('Failed to load calendar settings', error);
+      }
+    };
+    
+    loadCalendarSettings();
+  }, []);
+
   useEffect(() => {
     generateCalendarDays(currentMonth);
   }, [currentMonth]);
+  
+  // Effect for checking reminders and sending to glasses
+  useEffect(() => {
+    if (isConnected && calendarSettings.meetingReminders) {
+      const interval = setInterval(() => {
+        checkAndSendReminders();
+      }, 60000); // Check every minute
+      
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, tasks, calendarSettings]);
+
+  // Effect to send daily agenda to glasses
+  useEffect(() => {
+    if (isConnected && calendarSettings.dailyAgenda) {
+      sendDailyAgenda();
+    }
+  }, [isConnected, tasks, calendarSettings]);
+
+  // Check and send reminders for upcoming events
+  const checkAndSendReminders = () => {
+    if (!isConnected || !calendarSettings.meetingReminders) return;
+    
+    const now = new Date();
+    const upcomingTasks = tasks.filter(task => {
+      if (task.completed) return false;
+      
+      const taskDate = new Date(task.date);
+      if (!isSameDate(taskDate, now)) return false;
+      
+      if (!task.time) return false;
+      
+      const [hours, minutes] = task.time.split(':').map(Number);
+      const taskDateTime = new Date(taskDate);
+      taskDateTime.setHours(hours, minutes, 0, 0);
+      
+      const diffInMinutes = Math.floor((taskDateTime.getTime() - now.getTime()) / (1000 * 60));
+      
+      // Send reminders at 15, 10, and 5 minutes before
+      const shouldSendReminder = 
+        (diffInMinutes === 15 && (!task.reminderSent?.fifteenMinutes)) ||
+        (diffInMinutes === 10 && (!task.reminderSent?.tenMinutes)) ||
+        (diffInMinutes === 5 && (!task.reminderSent?.fiveMinutes));
+      
+      if (shouldSendReminder) {
+        sendReminderToGlasses(task, diffInMinutes);
+        
+        // Update the task to mark this reminder as sent
+        const updatedTask = { ...task };
+        if (!updatedTask.reminderSent) {
+          updatedTask.reminderSent = {
+            fiveMinutes: false,
+            tenMinutes: false,
+            fifteenMinutes: false
+          };
+        }
+        
+        if (diffInMinutes === 15) updatedTask.reminderSent.fifteenMinutes = true;
+        else if (diffInMinutes === 10) updatedTask.reminderSent.tenMinutes = true;
+        else if (diffInMinutes === 5) updatedTask.reminderSent.fiveMinutes = true;
+        
+        updateTaskInList(updatedTask);
+      }
+      
+      return false;
+    });
+  };
+  
+  // Update a specific task in the tasks list
+  const updateTaskInList = (updatedTask: Task) => {
+    const updatedTasks = tasks.map(task => 
+      task.id === updatedTask.id ? updatedTask : task
+    );
+    setTasks(updatedTasks);
+    saveTasks(updatedTasks);
+  };
+
+  // Send a reminder to the smart glasses
+  const sendReminderToGlasses = (task: Task, minutesUntil: number) => {
+    if (!isConnected) return;
+    
+    try {
+      const reminderData = {
+        type: "calendar_event",
+        title: task.title,
+        time: task.time,
+        minutesUntil: minutesUntil,
+        location: task.location || ""
+      };
+      
+      sendData(JSON.stringify(reminderData));
+      console.log(`Sent reminder to glasses: ${task.title} in ${minutesUntil} minutes`);
+    } catch (error) {
+      console.error('Failed to send reminder to glasses', error);
+    }
+  };
+
+  // Original daily agenda function (for automatic updates)
+  const sendDailyAgenda = () => {
+    if (!isConnected || !calendarSettings.dailyAgenda) return;
+    
+    try {
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      
+      // Get today's tasks
+      const todaysTasks = tasks.filter(task => 
+        task.date === formattedDate && !task.completed
+      );
+      
+      if (todaysTasks.length === 0) return;
+      
+      // Sort by time
+      todaysTasks.sort((a, b) => {
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return a.time.localeCompare(b.time);
+      });
+      
+      // Prepare a summary message
+      let message = `You have ${todaysTasks.length} events today:\n`;
+      
+      todaysTasks.forEach((task, index) => {
+        if (index < 3) { // Limit to first 3 tasks to fit on display
+          message += `${index + 1}. ${task.time || 'All day'} - ${task.title}\n`;
+        }
+      });
+      
+      if (todaysTasks.length > 3) {
+        message += `... and ${todaysTasks.length - 3} more`;
+      }
+      
+      const agendaData = {
+        type: "daily_agenda",
+        message: message
+      };
+      
+      sendData(JSON.stringify(agendaData));
+      console.log('Sent daily agenda to glasses');
+    } catch (error) {
+      console.error('Failed to send daily agenda to glasses', error);
+    }
+  };
+
+  // Send today's agenda to the glasses with timeout for 6 seconds
+  const sendDailyAgendaWithTimeout = () => {
+    if (!isConnected || !calendarSettings.dailyAgenda) {
+      Alert.alert(
+        "Connection Required",
+        "Please connect to your smart glasses first",
+        [{ text: "Go to Settings", onPress: () => /* router.push("/settings") */ console.log("Navigate to settings") }]
+      );
+      return;
+    }
+    
+    try {
+      const today = new Date();
+      const formattedDate = today.toISOString().split('T')[0];
+      
+      // Get today's tasks
+      const todaysTasks = tasks.filter(task => 
+        task.date === formattedDate && !task.completed
+      );
+      
+      if (todaysTasks.length === 0) {
+        Alert.alert("No Events", "You don't have any events scheduled for today.");
+        return;
+      }
+      
+      // Sort by time
+      todaysTasks.sort((a, b) => {
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return a.time.localeCompare(b.time);
+      });
+      
+      // Prepare a summary message
+      let message = `You have ${todaysTasks.length} events today:\n`;
+      
+      todaysTasks.forEach((task, index) => {
+        if (index < 3) { // Limit to first 3 tasks to fit on display
+          message += `${index + 1}. ${task.time || 'All day'} - ${task.title}\n`;
+        }
+      });
+      
+      if (todaysTasks.length > 3) {
+        message += `... and ${todaysTasks.length - 3} more`;
+      }
+      
+      // Send the agenda to display for 6 seconds
+      const agendaData = {
+        type: "temporary_message",
+        title: "Today's Agenda",
+        message: message,
+        duration: 6000 // 6 seconds in milliseconds
+      };
+      
+      sendData(JSON.stringify(agendaData));
+      console.log('Sent daily agenda to glasses for 6 seconds');
+      
+      // Show confirmation to the user
+      Alert.alert("Success", "Today's agenda has been sent to your smart glasses");
+    } catch (error) {
+      console.error('Failed to send daily agenda to glasses', error);
+      Alert.alert("Error", "Failed to send agenda to glasses. Please try again.");
+    }
+  };
+
+  // Send location-based reminder if enabled
+  const sendLocationBasedReminder = (task: Task) => {
+    if (!isConnected || !calendarSettings.locationBasedReminders || !task.location) return;
+    
+    try {
+      const locationData = {
+        type: "location_message",
+        location: task.location,
+        message: `You need to leave now for: ${task.title} at ${task.time}`
+      };
+      
+      sendData(JSON.stringify(locationData));
+      console.log(`Sent location reminder for ${task.title} at ${task.location}`);
+    } catch (error) {
+      console.error('Failed to send location reminder to glasses', error);
+    }
+  };
+
+  // Button to manually sync today's events with glasses
+  const syncWithGlasses = () => {
+    sendDailyAgendaWithTimeout();
+  };
 
   const generateCalendarDays = (month: Date) => {
     const days: CalendarDay[] = [];
@@ -190,12 +457,19 @@ const To_do: React.FC = () => {
       completed: false,
       date: formattedDate,
       time: timeToUse,
+      location: locationInput.trim() || undefined,
+      reminderSent: {
+        fiveMinutes: false,
+        tenMinutes: false,
+        fifteenMinutes: false
+      }
     };
     
     const updatedTasks = [...tasks, newTaskItem];
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
     setNewTask('');
+    setLocationInput('');
     setSelectedTime(getCurrentTime().formatted);
   };
 
@@ -261,17 +535,25 @@ const To_do: React.FC = () => {
   };
 
   const updateTask = () => {
-    if (editTaskText.trim() === '' || !editingTask) return;
+    if (!editingTask || editTaskText.trim() === '') return;
+    
+    const updatedTask: Task = {
+      ...editingTask,
+      title: editTaskText,
+      time: selectedTime,
+      location: editLocationInput.trim() || undefined
+    };
     
     const updatedTasks = tasks.map(task => 
-      task.id === editingTask.id 
-        ? { ...task, title: editTaskText, time: selectedTime || task.time } 
-        : task
+      task.id === editingTask.id ? updatedTask : task
     );
     
     setTasks(updatedTasks);
     saveTasks(updatedTasks);
+    setEditingTask(null);
     setModalVisible(false);
+    setEditTaskText('');
+    setEditLocationInput('');
   };
 
   const isSameDate = (date1: Date, date2: Date): boolean => {
@@ -432,33 +714,194 @@ const To_do: React.FC = () => {
     return getCurrentTime().formatted;
   };
   
-  const checkUpcomingEvents = () => {
+  // Check and send 10-minute reminder alerts to glasses
+  const checkAndSendTenMinuteAlerts = () => {
+    if (!isConnected) return;
+    
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     
+    // Calculate tomorrow's date for checking tasks around midnight
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    // Get today's tasks
     const todayTasks = tasks.filter(task => 
       task.date === todayStr && task.time && !task.completed
     );
     
-    const upcoming = todayTasks.filter(task => {
-      if (!task.time) return false;
+    // Also check tomorrow's tasks if we're close to midnight
+    const isCloseToMidnight = now.getHours() === 23 && now.getMinutes() >= 50;
+    const tomorrowTasks = isCloseToMidnight ? 
+      tasks.filter(task => 
+        task.date === tomorrowStr && task.time && !task.completed &&
+        // Only include tasks within an hour of midnight
+        task.time.startsWith('00:')
+      ) : [];
+    
+    // Combined list of tasks to check
+    const tasksToCheck = [...todayTasks, ...tomorrowTasks];
+    
+    tasksToCheck.forEach(task => {
+      if (!task.time) return;
       
-      const timeParts = task.time.split(':');
-      if (timeParts.length !== 2) return false;
+      const [hours, minutes] = task.time.split(':').map(Number);
       
-      const taskHour = parseInt(timeParts[0], 10);
-      const taskMinute = parseInt(timeParts[1], 10);
+      // For tomorrow's tasks near midnight
+      if (task.date === tomorrowStr) {
+        const taskDateTime = new Date(now);
+        taskDateTime.setDate(taskDateTime.getDate() + 1);
+        taskDateTime.setHours(hours, minutes, 0, 0);
+        
+        const diffMs = taskDateTime.getTime() - now.getTime();
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        
+        // 9-11 minute window to avoid missing it
+        if (diffMinutes >= 9 && diffMinutes <= 11) {
+          if (!alertedEventsRef.current.has(task.id)) {
+            sendTenMinuteAlertToGlasses(task);
+            alertedEventsRef.current.add(task.id);
+          }
+        }
+        return;
+      }
       
-      if (isNaN(taskHour) || isNaN(taskMinute)) return false;
+      // For today's tasks
+      const taskDateTime = new Date(now);
+      taskDateTime.setHours(hours, minutes, 0, 0);
       
-      const taskTime = new Date(now);
-      taskTime.setHours(taskHour, taskMinute, 0, 0);
+      const diffMs = taskDateTime.getTime() - now.getTime();
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
       
-      const diffMs = taskTime.getTime() - now.getTime();
-      const diffMinutes = diffMs / (1000 * 60);
-      
-      return diffMinutes >= 0 && diffMinutes <= 10;
+      // If task is coming up in 10 minutes (9-11 minute window to avoid missing it)
+      if (diffMinutes >= 9 && diffMinutes <= 11) {
+        // Check if we've already sent an alert for this task
+        if (!alertedEventsRef.current.has(task.id)) {
+          // Send alert to glasses
+          sendTenMinuteAlertToGlasses(task);
+          // Mark as alerted
+          alertedEventsRef.current.add(task.id);
+        }
+      }
     });
+  };
+  
+  // Send a 10-minute alert to the smart glasses
+  const sendTenMinuteAlertToGlasses = (task: Task) => {
+    try {
+      // Get the formatted date for display
+      let dateText = '';
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      
+      if (task.date === todayStr) {
+        dateText = 'today';
+      } else {
+        // Format the date as "Jan 15" or similar
+        const taskDate = new Date(task.date);
+        dateText = taskDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      
+      const alertData = {
+        type: "urgent_alert",
+        title: "Event in 10 Minutes",
+        message: `${task.title} at ${task.time} ${dateText}\n${task.location ? `Location: ${task.location}` : ''}`,
+        priority: "high"
+      };
+      
+      sendData(JSON.stringify(alertData));
+      console.log(`Sent 10-minute alert to glasses: ${task.title}`);
+    } catch (error) {
+      console.error('Failed to send 10-minute alert to glasses', error);
+    }
+  };
+
+  // Add effect for 10-minute alerts
+  useEffect(() => {
+    if (isConnected) {
+      const alertInterval = setInterval(() => {
+        checkAndSendTenMinuteAlerts();
+      }, 60000); // Check every minute
+      
+      return () => clearInterval(alertInterval);
+    }
+  }, [isConnected, tasks]);
+
+  // Update checkUpcomingEvents to also send to glasses
+  const checkUpcomingEvents = () => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    // Calculate tomorrow's date
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    // Get incomplete tasks for today and tomorrow
+    const todayTasks = tasks.filter(task => 
+      task.date === todayStr && task.time && !task.completed
+    );
+    
+    const tomorrowTasks = tasks.filter(task => 
+      task.date === tomorrowStr && task.time && !task.completed
+    );
+    
+    // Filter for upcoming events in the next 10 minutes
+    const filterUpcoming = (taskList: Task[]) => {
+      return taskList.filter(task => {
+        if (!task.time) return false;
+        
+        const timeParts = task.time.split(':');
+        if (timeParts.length !== 2) return false;
+        
+        const taskHour = parseInt(timeParts[0], 10);
+        const taskMinute = parseInt(timeParts[1], 10);
+        
+        if (isNaN(taskHour) || isNaN(taskMinute)) return false;
+        
+        const taskTime = new Date(now);
+        taskTime.setHours(taskHour, taskMinute, 0, 0);
+        
+        // For today's tasks
+        if (task.date === todayStr) {
+          const diffMs = taskTime.getTime() - now.getTime();
+          const diffMinutes = diffMs / (1000 * 60);
+          return diffMinutes >= 0 && diffMinutes <= 10;
+        }
+        
+        // For tomorrow's tasks - early morning tasks (after midnight)
+        // Check if it's within the next 10 minutes after midnight
+        if (task.date === tomorrowStr) {
+          // Only check if we're approaching midnight (in the last hour of the day)
+          if (now.getHours() === 23) {
+            const midnightToday = new Date(now);
+            midnightToday.setHours(24, 0, 0, 0);  // Set to midnight
+            
+            const tomorrowTaskTime = new Date(now);
+            tomorrowTaskTime.setDate(tomorrowTaskTime.getDate() + 1);
+            tomorrowTaskTime.setHours(taskHour, taskMinute, 0, 0);
+            
+            const diffMs = tomorrowTaskTime.getTime() - now.getTime();
+            const diffMinutes = diffMs / (1000 * 60);
+            
+            // If it's within 10 minutes after midnight and we're approaching midnight
+            return diffMinutes >= 0 && diffMinutes <= 10;
+          }
+        }
+        
+        return false;
+      });
+    };
+    
+    const upcomingToday = filterUpcoming(todayTasks);
+    const upcomingTomorrow = filterUpcoming(tomorrowTasks);
+    
+    // Combined upcoming events, but keeping track of which day they belong to
+    const upcoming = [
+      ...upcomingToday.map(task => ({ ...task, dayType: 'today' as const })),
+      ...upcomingTomorrow.map(task => ({ ...task, dayType: 'tomorrow' as const }))
+    ];
     
     const eventsNeedingAlert = upcoming.filter(event => {
       if (alertedEventsRef.current.has(event.id)) {
@@ -478,24 +921,43 @@ const To_do: React.FC = () => {
     });
     
     if (eventsNeedingAlert.length > 0) {
-      showEventAlert(eventsNeedingAlert);
+      // Group events by day
+      const todayEvents = eventsNeedingAlert.filter(event => event.dayType === 'today');
+      const tomorrowEvents = eventsNeedingAlert.filter(event => event.dayType === 'tomorrow');
+      
+      // Show alerts separately for today and tomorrow
+      if (todayEvents.length > 0) {
+        showEventAlert(todayEvents, 'today');
+      }
+      
+      if (tomorrowEvents.length > 0) {
+        showEventAlert(tomorrowEvents, 'tomorrow');
+      }
+      
+      // Also send alerts to glasses for new upcoming events
+      if (isConnected) {
+        eventsNeedingAlert.forEach(event => {
+          sendTenMinuteAlertToGlasses(event);
+        });
+      }
     }
     
     setUpcomingEvents(upcoming);
     previousUpcomingEventsRef.current = upcoming;
   };
   
-  const showEventAlert = (events: Task[]) => {
+  const showEventAlert = (events: Task[], dayType: 'today' | 'tomorrow') => {
     let title = "Upcoming Event";
     let message = "";
+    const dayText = dayType === 'today' ? 'today' : 'tomorrow';
     
     if (events.length === 1) {
       const event = events[0];
-      title = "Upcoming Event in 10 Minutes";
-      message = `"${event.title}" is scheduled for ${event.time}.`;
+      title = `Upcoming Event in 10 Minutes (${dayText})`;
+      message = `"${event.title}" is scheduled for ${event.time} ${dayText}.`;
     } else {
-      title = "Upcoming Events in 10 Minutes";
-      message = "You have these events coming up:\n\n" + 
+      title = `Upcoming Events in 10 Minutes (${dayText})`;
+      message = `You have these events coming up ${dayText}:\n\n` + 
         events.map(event => `• ${event.time} - ${event.title}`).join('\n');
     }
     
@@ -512,7 +974,7 @@ const To_do: React.FC = () => {
             
             setTimeout(() => {
               if (events.some(event => !tasks.find(t => t.id === event.id)?.completed)) {
-                showEventAlert(events);
+                showEventAlert(events, dayType);
               }
             }, 5 * 60 * 1000);
           }
@@ -670,18 +1132,29 @@ const To_do: React.FC = () => {
         )}
       </Animated.View>
       
-      {/* Replace the calendar container with a button to open the calendar modal */}
-      <TouchableOpacity 
-        style={styles.calendarButton}
-        onPress={() => setCalendarModalVisible(true)}
-      >
-        <View style={styles.calendarButtonContent}>
-          <Text style={styles.selectedDateText}>
-            {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-          </Text>
-          <FontAwesome6 name="calendar-alt" size={18} color={COLORS.primary} />
-        </View>
-      </TouchableOpacity>
+      {/* Calendar button */}
+      <View style={styles.calendarButtonRow}>
+        <TouchableOpacity 
+          style={styles.calendarButton}
+          onPress={() => setCalendarModalVisible(true)}
+        >
+          <View style={styles.calendarButtonContent}>
+            <Text style={styles.selectedDateText}>
+              {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </Text>
+            <FontAwesome6 name="calendar-alt" size={18} color={COLORS.primary} />
+          </View>
+        </TouchableOpacity>
+        
+        {/* Show on Glasses button */}
+        <TouchableOpacity 
+          style={styles.showOnGlassesButton}
+          onPress={sendDailyAgendaWithTimeout}
+        >
+          <FontAwesome6 name="glasses" size={18} color="#FFFFFF" />
+          <Text style={styles.showOnGlassesText}>Show on Glasses</Text>
+        </TouchableOpacity>
+      </View>
       
       <Text style={styles.dateHeader}>
         {selectedDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -1085,10 +1558,16 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: 'right',
   },
-  calendarButton: {
-    margin: 15,
-    marginTop: 5,
+  calendarButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
     marginBottom: 10,
+  },
+  calendarButton: {
+    flex: 1,
+    marginRight: 10,
   },
   calendarButtonContent: {
     flexDirection: 'row',
@@ -1590,6 +2069,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
+  showOnGlassesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+  },
+  showOnGlassesText: {
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontWeight: '600',
+    fontSize: 14,
+  },
 });
 
 export default To_do;
+
