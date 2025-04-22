@@ -1,26 +1,16 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useBluetooth } from '../../context/BluetoothContext';
 
 export default function ProfileScreen() {
   const { isConnected, sendData } = useBluetooth();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
-  const [authData, setAuthData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
   const [isEditMode, setIsEditMode] = useState(false);
   const [profile, setProfile] = useState({
-    name: '',
-    email: '',
-    age: '',
-    height: '',
-    weight: '',
+    name: 'User',
+    email: 'user@example.com',
   });
   
   // Calendar notification settings
@@ -91,99 +81,6 @@ export default function ProfileScreen() {
       ...prev,
       activityBasedAlerts: !prev.activityBasedAlerts
     }));
-  };
-
-  const handleAuth = () => {
-    if (isLogin) {
-      // Login logic
-      if (!authData.email || !authData.password) {
-        Alert.alert("Error", "Please fill in all fields");
-        return;
-      }
-      // Here you would typically make an API call to verify credentials
-      setIsAuthenticated(true);
-      setProfile(prev => ({ ...prev, email: authData.email }));
-    } else {
-      // Signup logic
-      if (!authData.email || !authData.password || !authData.confirmPassword) {
-        Alert.alert("Error", "Please fill in all fields");
-        return;
-      }
-      if (authData.password !== authData.confirmPassword) {
-        Alert.alert("Error", "Passwords do not match");
-        return;
-      }
-      // Here you would typically make an API call to create account
-      setIsAuthenticated(true);
-      setProfile(prev => ({ ...prev, email: authData.email }));
-    }
-  };
-
-  const renderAuthScreen = () => {
-    return (
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.authContainer}
-      >
-        <View style={styles.authContent}>
-          <Image 
-            source={require('../../assets/images/icon.png')} 
-            style={styles.authLogo}
-          />
-          <Text style={styles.authTitle}>
-            {isLogin ? "Welcome Back" : "Create Account"}
-          </Text>
-          <Text style={styles.authSubtitle}>
-            {isLogin ? "Sign in to continue " : "Sign up to get started "}
-          </Text>
-
-          <TextInput
-            style={styles.authInput}
-            placeholder="Email"
-            value={authData.email}
-            onChangeText={(text) => setAuthData(prev => ({ ...prev, email: text }))}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-
-          <TextInput
-            style={styles.authInput}
-            placeholder="Password"
-            value={authData.password}
-            onChangeText={(text) => setAuthData(prev => ({ ...prev, password: text }))}
-            secureTextEntry
-          />
-
-          {!isLogin && (
-            <TextInput
-              style={styles.authInput}
-              placeholder="Confirm Password"
-              value={authData.confirmPassword}
-              onChangeText={(text) => setAuthData(prev => ({ ...prev, confirmPassword: text }))}
-              secureTextEntry
-            />
-          )}
-
-          <TouchableOpacity style={styles.authButton} onPress={handleAuth}>
-            <Text style={styles.authButtonText}>
-              {isLogin ? "Login " : "Sign Up "}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.authToggle}
-            onPress={() => {
-              setIsLogin(!isLogin);
-              setAuthData({ email: '', password: '', confirmPassword: '' });
-            }}
-          >
-            <Text style={styles.authToggleText}>
-              {isLogin ? "Don't have an account? Sign Up " : "Already have an account? Login "}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    );
   };
 
   const handleAvatarPress = () => {
@@ -320,6 +217,21 @@ export default function ProfileScreen() {
     }));
   };
 
+  // Function to send a quick command to the glasses and navigate to home
+  const sendQuickCommand = () => {
+    if (isConnected) {
+      // If connected, send data to glasses (without alert)
+      sendData(JSON.stringify({
+        type: "quick_command",
+        command: "show_home",
+        message: "Opening home view"
+      }));
+    }
+    
+    // Navigate to home page directly (just like Connected Devices button)
+    router.push("/");
+  };
+
   const renderEditProfileModal = () => {
     return (
       <Modal
@@ -355,33 +267,6 @@ export default function ProfileScreen() {
                 keyboardType="email-address"
               />
 
-              <Text style={styles.inputLabel}>Age</Text>
-              <TextInput
-                style={styles.input}
-                value={profile.age}
-                onChangeText={(text) => setProfile({ ...profile, age: text })}
-                placeholder="Enter your age"
-                keyboardType="numeric"
-              />
-
-              <Text style={styles.inputLabel}>Height (cm)</Text>
-              <TextInput
-                style={styles.input}
-                value={profile.height}
-                onChangeText={(text) => setProfile({ ...profile, height: text })}
-                placeholder="Enter your height"
-                keyboardType="numeric"
-              />
-
-              <Text style={styles.inputLabel}>Weight (kg)</Text>
-              <TextInput
-                style={styles.input}
-                value={profile.weight}
-                onChangeText={(text) => setProfile({ ...profile, weight: text })}
-                placeholder="Enter your weight"
-                keyboardType="numeric"
-              />
-
               <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
                 <Text style={styles.saveButtonText}>Save Profile</Text>
               </TouchableOpacity>
@@ -392,13 +277,9 @@ export default function ProfileScreen() {
     );
   };
 
-  if (!isAuthenticated) {
-    return renderAuthScreen();
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer}>
             <Image 
@@ -713,17 +594,25 @@ export default function ProfileScreen() {
             </>
           )}
           
-          <TouchableOpacity style={styles.settingItem}>
-            <Ionicons name="notifications" size={24} color="#007AFF" />
-            <Text style={styles.settingText}>Notifications</Text>
+          {/* Replace the Notifications item with GlassCommand button */}
+          <TouchableOpacity 
+            style={styles.settingItem} 
+            onPress={sendQuickCommand}
+          >
+            <Ionicons name="home" size={24} color="#007AFF" />
+            <Text style={styles.settingText}>Home Screen</Text>
             <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
           </TouchableOpacity>
+          
           <TouchableOpacity style={styles.settingItem} onPress={ () => router.push("/settings")}>
             <Ionicons name="bluetooth" size={24} color="#007AFF" />
             <Text style={styles.settingText}>Connected Devices</Text>
             <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
           </TouchableOpacity>
         </View>
+        
+        {/* Added spacer at the bottom to keep content above the nav bar */}
+        <View style={styles.bottomSpacer} />
       </ScrollView>
       {renderEditProfileModal()}
     </SafeAreaView>
@@ -734,6 +623,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F2F2F7',
+  },
+  scrollViewContent: {
+    paddingBottom: 25, // Add padding at the bottom to ensure content is above the nav bar
+  },
+  bottomSpacer: {
+    height: 60, // Additional space at the bottom
   },
   header: {
     alignItems: 'center',
@@ -817,7 +712,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: '80%',
+    minHeight: '48%',
     padding: 20,
   },
   modalHeader: {
@@ -857,60 +752,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  authContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  authContent: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  authLogo: {
-    width: 100,
-    height: 100,
-    marginBottom: 30,
-  },
-  authTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#007AFF',
-  },
-  authSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
-  },
-  authInput: {
-    width: '100%',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    padding: 15,
-    fontSize: 16,
-    marginBottom: 15,
-  },
-  authButton: {
-    width: '100%',
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 15,
-  },
-  authButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  authToggle: {
-    marginTop: 20,
-  },
-  authToggleText: {
-    color: '#007AFF',
-    fontSize: 14,
   },
   settingSection: {
     borderBottomWidth: 1,
@@ -1016,6 +857,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#007AFF',
     marginTop: 8,
+  },
+  glassCommandItem: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF5D8A',
+    backgroundColor: 'rgba(255, 93, 138, 0.05)',
+  },
+  goHomeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  goHomeText: {
+    fontSize: 12,
+    color: '#FF5D8A',
+    marginRight: 4,
   },
 });
 
