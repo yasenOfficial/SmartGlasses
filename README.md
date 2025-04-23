@@ -18,7 +18,7 @@ The mobile application is developed in React Native and connects to the ESP32 mo
 
 ChatGPT Integration: Captures images through the OV2640 Camera Module and sends them to OpenAI’s ChatGPT API. The generated answer is then shown on the internal glasses display, providing real-time assistance based on visual input.
 
-Navigation with Google Maps: Turn-by-turn navigation is handled through Google Maps. Directions are shown on the display shortly before each turn and are automatically removed once passed. This enables seamless pedestrian navigation without needing to check a phone.
+Navigation: Uses the OpenRouteService (ORS) API to fetch accurate pedestrian navigation data. Each upcoming direction is shown on the glasses display shortly before reaching it, and automatically cleared once the user passes it, providing a seamless walking guidance experience.
 
 Custom Calendar Reminders: A built-in calendar system allows the user to input events manually. A notification is shown on the glasses display 10 minutes before the event occurs, ensuring the user stays on schedule.
 
