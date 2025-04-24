@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, Modal, TextInput, KeyboardAvoidingView, Platform, Animated, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useBluetooth } from '../../context/BluetoothContext';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { isConnected, sendData } = useBluetooth();
@@ -11,6 +15,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState({
     name: 'User',
     email: 'user@example.com',
+    avatar: null as string | null,
   });
   
   // Calendar notification settings
@@ -27,10 +32,10 @@ export default function ProfileScreen() {
     activityBasedAlerts: false
   });
   
-  // Toggle states for section expansion
-  const [expandCalendar, setExpandCalendar] = useState(true);
-  const [expandContext, setExpandContext] = useState(true);
-  const [expandDisplay, setExpandDisplay] = useState(true);
+  // Toggle states for section expansion - initialize all to false
+  const [expandCalendar, setExpandCalendar] = useState(false);
+  const [expandContext, setExpandContext] = useState(false);
+  const [expandDisplay, setExpandDisplay] = useState(false);
   
   // Text size settings
   const [textSizeSettings, setTextSizeSettings] = useState({
@@ -38,6 +43,30 @@ export default function ProfileScreen() {
     messageSize: 'medium', // small, medium, large
     messageTimeout: 5000 // default 5 seconds (5000ms)
   });
+  
+  const [showImageMenu, setShowImageMenu] = useState(false);
+  const slideAnim = React.useRef(new Animated.Value(SCREEN_WIDTH)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  
+  const [emailError, setEmailError] = useState('');
+
+  // Email validation function
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return emailRegex.test(email.trim());
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (text: string) => {
+    setProfile({ ...profile, email: text });
+    if (text.trim() === '') {
+      setEmailError('Email is required');
+    } else if (!isValidEmail(text)) {
+      setEmailError('Please enter a valid email address');
+    } else {
+      setEmailError('');
+    }
+  };
   
   // Toggle handlers for calendar settings
   const toggleMeetingReminders = () => {
@@ -84,34 +113,135 @@ export default function ProfileScreen() {
   };
 
   const handleAvatarPress = () => {
-    Alert.alert(
-      "Change Profile Picture",
-      "This feature will be available in future updates",
-      [{ text: "OK", onPress: () => console.log("OK Pressed") }]
-    );
+    setShowImageMenu(true);
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
-  const handleSaveProfile = () => {
-    if (!profile.name || !profile.email) {
-      Alert.alert("Error", "Name and email are required!");
+  const closeImageMenu = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_WIDTH,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setShowImageMenu(false);
+    });
+  };
+
+  const handleImageOption = async (useCamera: boolean) => {
+    closeImageMenu();
+    // Add a small delay to let the menu close animation finish
+    setTimeout(() => pickImage(useCamera), 300);
+  };
+
+  const pickImage = async (useCamera: boolean) => {
+    try {
+      // Request permission first
+      const permissionResult = useCamera 
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert(
+          "Permission Required",
+          `Please grant ${useCamera ? 'camera' : 'gallery'} access in your device settings to change profile picture.`
+        );
+        return;
+      }
+
+      // Launch camera or image picker
+      const result = useCamera
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.5,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.5,
+          });
+
+      if (!result.canceled) {
+        const newProfile = {
+          ...profile,
+          avatar: result.assets[0].uri
+        };
+        setProfile(newProfile);
+        await AsyncStorage.setItem('userProfile', JSON.stringify(newProfile));
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Failed to update profile picture. Please try again.');
+    }
+  };
+
+  // Load profile data on component mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const savedProfile = await AsyncStorage.getItem('userProfile');
+        if (savedProfile) {
+          setProfile(JSON.parse(savedProfile));
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+    loadProfile();
+  }, []);
+
+  const handleSaveProfile = async () => {
+    // Validate all fields before saving
+    if (!profile.name.trim()) {
+      Alert.alert("Error", "Name is required!");
+      return;
+    }
+
+    if (!profile.email.trim()) {
+      Alert.alert("Error", "Email is required!");
+      return;
+    }
+
+    if (!isValidEmail(profile.email)) {
+      Alert.alert("Error", "Please enter a valid email address!");
       return;
     }
     
-    // Save all settings to local storage or your backend
-    const allSettings = {
-      profile,
-      calendarSettings,
-      contextSettings
-    };
-    
-    // For demonstration, just logging the settings
-    console.log('Saving settings:', allSettings);
-    
-    // You would typically save to AsyncStorage or your backend:
-    // AsyncStorage.setItem('userSettings', JSON.stringify(allSettings));
-    
-    setIsEditMode(false);
-    Alert.alert("Success", "Profile and notification settings updated successfully!");
+    try {
+      // Save all settings to AsyncStorage
+      const allSettings = {
+        profile,
+        calendarSettings,
+        contextSettings
+      };
+      
+      await AsyncStorage.setItem('userProfile', JSON.stringify(profile));
+      await AsyncStorage.setItem('userSettings', JSON.stringify(allSettings));
+      
+      setIsEditMode(false);
+      Alert.alert("Success", "Profile and notification settings updated successfully!");
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert("Error", "Failed to save profile settings. Please try again.");
+    }
   };
   
   // Function to apply calendar settings to the device
@@ -256,23 +386,144 @@ export default function ProfileScreen() {
                 value={profile.name}
                 onChangeText={(text) => setProfile({ ...profile, name: text })}
                 placeholder="Enter your name"
+                autoCapitalize="words"
+                autoComplete="name"
               />
 
               <Text style={styles.inputLabel}>Email *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, emailError ? styles.inputError : null]}
                 value={profile.email}
-                onChangeText={(text) => setProfile({ ...profile, email: text })}
+                onChangeText={handleEmailChange}
                 placeholder="Enter your email"
                 keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                autoCorrect={false}
               />
+              {emailError ? (
+                <Text style={styles.errorText}>{emailError}</Text>
+              ) : null}
 
-              <TouchableOpacity style={styles.saveButton} onPress={handleSaveProfile}>
+              <TouchableOpacity 
+                style={[
+                  styles.saveButton,
+                  (!profile.name.trim() || !isValidEmail(profile.email)) && styles.saveButtonDisabled
+                ]} 
+                onPress={handleSaveProfile}
+                disabled={!profile.name.trim() || !isValidEmail(profile.email)}
+              >
                 <Text style={styles.saveButtonText}>Save Profile</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
+      </Modal>
+    );
+  };
+
+  const renderImagePickerMenu = () => {
+    return (
+      <Modal
+        visible={showImageMenu}
+        transparent={true}
+        animationType="none"
+        onRequestClose={closeImageMenu}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={closeImageMenu}
+        >
+          <Animated.View
+            style={[
+              styles.imageMenuContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.imageMenuHeader}>
+              <Text style={styles.imageMenuTitle}>Change Profile Picture</Text>
+              <TouchableOpacity onPress={closeImageMenu}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.imageOption}
+              onPress={() => handleImageOption(true)}
+            >
+              <View style={styles.imageOptionIcon}>
+                <Ionicons name="camera" size={24} color="#007AFF" />
+              </View>
+              <View style={styles.imageOptionText}>
+                <Text style={styles.imageOptionTitle}>Take Photo</Text>
+                <Text style={styles.imageOptionDescription}>
+                  Use your camera to take a new profile picture
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.imageOption}
+              onPress={() => handleImageOption(false)}
+            >
+              <View style={styles.imageOptionIcon}>
+                <Ionicons name="images" size={24} color="#007AFF" />
+              </View>
+              <View style={styles.imageOptionText}>
+                <Text style={styles.imageOptionTitle}>Choose from Gallery</Text>
+                <Text style={styles.imageOptionDescription}>
+                  Select a photo from your device
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
+            </TouchableOpacity>
+
+            {profile.avatar && (
+              <TouchableOpacity
+                style={[styles.imageOption, styles.removeOption]}
+                onPress={() => {
+                  closeImageMenu();
+                  setTimeout(() => {
+                    Alert.alert(
+                      "Remove Profile Picture",
+                      "Are you sure you want to remove your profile picture?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Remove",
+                          style: "destructive",
+                          onPress: async () => {
+                            const newProfile = { ...profile, avatar: null };
+                            setProfile(newProfile);
+                            await AsyncStorage.setItem('userProfile', JSON.stringify(newProfile));
+                          }
+                        }
+                      ]
+                    );
+                  }, 300);
+                }}
+              >
+                <View style={[styles.imageOptionIcon, styles.removeIcon]}>
+                  <Ionicons name="trash" size={24} color="#FF3B30" />
+                </View>
+                <View style={styles.imageOptionText}>
+                  <Text style={[styles.imageOptionTitle, styles.removeText]}>
+                    Remove Current Photo
+                  </Text>
+                  <Text style={styles.imageOptionDescription}>
+                    Delete your profile picture
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#C7C7CC" />
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+        </TouchableOpacity>
       </Modal>
     );
   };
@@ -283,7 +534,7 @@ export default function ProfileScreen() {
         <View style={styles.header}>
           <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer}>
             <Image 
-              source={require('../../assets/images/icon.png')} 
+              source={profile.avatar ? { uri: profile.avatar } : require('../../assets/images/icon.png')} 
               defaultSource={require('../../assets/images/icon.png')}
               style={styles.avatar} 
             />
@@ -615,6 +866,7 @@ export default function ProfileScreen() {
         <View style={styles.bottomSpacer} />
       </ScrollView>
       {renderEditProfileModal()}
+      {renderImagePickerMenu()}
     </SafeAreaView>
   );
 }
@@ -871,6 +1123,84 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#FF5D8A',
     marginRight: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  imageMenuContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '50%',
+  },
+  imageMenuHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
+  },
+  imageMenuTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  imageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
+  },
+  imageOptionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E3F2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  imageOptionText: {
+    flex: 1,
+  },
+  imageOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    color: '#000',
+  },
+  imageOptionDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  removeOption: {
+    marginTop: 10,
+  },
+  removeIcon: {
+    backgroundColor: '#FFE5E5',
+  },
+  removeText: {
+    color: '#FF3B30',
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#A0A0A0',
+    opacity: 0.7,
   },
 });
 

@@ -12,13 +12,19 @@ import {
   Animated,
   Easing,
   Image,
-  FlatList
+  FlatList,
+  Platform,
+  StatusBar,
+  Vibration,
+  KeyboardAvoidingView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
+import { FontAwesome6 } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBluetooth } from '../../context/BluetoothContext';
+import Header from '../../components/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -1062,8 +1068,17 @@ const To_do: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <ExpoStatusBar style="dark" />
+      
+      {/* Custom Header with back button */}
+      <Header 
+        title="Calendar"
+        showPath={true}
+        pathPrefix="Home" 
+        iconColor={COLORS.primary}
+        textColor={COLORS.text}
+      />
       
       {/* Upcoming Events Alert Banner */}
       {upcomingEvents.length > 0 && (
@@ -1511,14 +1526,18 @@ const To_do: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
   header: {
     paddingHorizontal: 20,
-    paddingTop: 20,
     paddingBottom: 10,
+    marginTop: 0,
   },
   headerTextContainer: {
     flexDirection: 'row',

@@ -36,7 +36,7 @@ export default function TabLayout() {
         options={{
           title: "My Profile ",
           tabBarIcon: ({ color }) => (
-            <FontAwesome6 name="car" size={24} color={color} />
+            <FontAwesome6 name="circle-user" size={24} color={color} />
           )
         }} 
       />      

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, TextInput, Text, StyleSheet, Alert, TouchableOpacity, ScrollView, SafeAreaView, Dimensions } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 // Import our fallback location module that handles the native module error
 import Location, { LocationObject, LocationSubscription } from '../../utils/LocationFallback';
+import { useBluetooth } from '../../context/BluetoothContext';
+import Header from '../../components/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -29,6 +31,20 @@ interface Region {
   latitudeDelta: number;
   longitudeDelta: number;
 }
+
+const COLORS = {
+  primary: '#6C5CE7',
+  secondary: '#A29BFE',
+  accent: '#00CEC9',
+  background: '#FFFFFF',
+  text: '#2D3436',
+  textLight: '#636E72',
+  error: '#FF7675',
+  success: '#55EFC4',
+  card: '#FFFFFF',
+  inputBg: '#F1F2F6',
+  shadow: '#2D3436'
+};
 
 // Direction Card component - displays a single direction step
 const DirectionCard = ({ 
@@ -129,11 +145,9 @@ const DirectionsUI = ({
   estimatedDistance: number | null
 }) => (
   <View style={styles.directionsContainer}>
-    {/* Header with route summary */}
-    <View style={styles.headerContainer}>
+    {/* Route summary info */}
+    {steps.length > 0 && (
       <View style={[styles.headerBackground, { backgroundColor: '#344955' }]}>
-        <Text style={styles.headerTitle}>Navigation</Text>
-        
         <View style={styles.destinationRow}>
           <MaterialIcons name="location-on" size={20} color="#F9AA33" />
           <Text style={styles.destinationText} numberOfLines={1}>
@@ -144,56 +158,45 @@ const DirectionsUI = ({
         {estimatedTime !== null && estimatedDistance !== null && (
           <View style={styles.routeMetrics}>
             <View style={styles.metricItem}>
-              <MaterialIcons name="access-time" size={18} color="#A6D5F7" />
-              <Text style={styles.metricText}>{estimatedTime} min</Text>
+              <MaterialIcons name="directions-walk" size={16} color="#FFFFFF" />
+              <Text style={styles.metricText}>{(estimatedDistance / 1000).toFixed(1)} km</Text>
             </View>
             
             <View style={styles.metricDivider} />
             
             <View style={styles.metricItem}>
-              <MaterialIcons name="straighten" size={18} color="#A6D5F7" />
-              <Text style={styles.metricText}>{estimatedDistance.toFixed(2)} km</Text>
-            </View>
-            
-            <View style={styles.metricDivider} />
-            
-            <View style={styles.metricItem}>
-              <MaterialIcons name="directions-walk" size={18} color="#A6D5F7" />
-              <Text style={styles.metricText}>{steps.length} steps</Text>
+              <MaterialIcons name="access-time" size={16} color="#FFFFFF" />
+              <Text style={styles.metricText}>{Math.round(estimatedTime / 60)} min</Text>
             </View>
           </View>
         )}
       </View>
-    </View>
+    )}
     
-    {/* Main directions list */}
-    {steps.length > 0 ? (
-      <ScrollView 
-        style={styles.directionsScrollview}
-        contentContainerStyle={styles.directionsScrollContent}
-      >
-        {steps.map((step, index) => (
+    {/* Direction steps */}
+    <ScrollView
+      style={styles.directionsScrollview}
+      contentContainerStyle={styles.directionsScrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {steps.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <MaterialIcons name="map" size={80} color="#B0BEC5" />
+          <Text style={styles.emptyStateText}>Enter a destination to start navigation</Text>
+        </View>
+      ) : (
+        steps.map((step, index) => (
           <DirectionCard
             key={index}
             instruction={step.instruction}
-            distance={index === currentInstructionIndex ? distanceToNext || undefined : undefined}
+            distance={index === currentInstructionIndex && distanceToNext ? distanceToNext : undefined}
             isActive={index === currentInstructionIndex}
             isUpcoming={index === upcomingInstructionIndex}
             index={index}
           />
-        ))}
-        
-        {/* Bottom padding for scroll view */}
-        <View style={styles.scrollPadding} />
-      </ScrollView>
-    ) : (
-      <View style={styles.noDirectionsContainer}>
-        <MaterialCommunityIcons name="map-search" size={64} color="#B0BEC5" />
-        <Text style={styles.noDirectionsText}>
-          Enter a destination to get directions
-        </Text>
-      </View>
-    )}
+        ))
+      )}
+    </ScrollView>
   </View>
 );
 
@@ -517,6 +520,13 @@ export default function ORSWalkingNavigation() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Header 
+        title="Maps"
+        showPath={true}
+        pathPrefix="Home" 
+        iconColor={COLORS.primary}
+        textColor={COLORS.text}
+      />
       {/* Main directions UI */}
       <DirectionsUI 
         location={location}
@@ -606,6 +616,7 @@ const styles = StyleSheet.create({
   },
   directionsContainer: {
     flex: 1,
+    paddingBottom: 70, // Add space for the bottom controls
   },
   headerContainer: {
     height: 140,
@@ -613,8 +624,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerBackground: {
-    flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
@@ -842,5 +852,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#5F6B73',
+    textAlign: 'center',
+    marginTop: 15,
   },
 });

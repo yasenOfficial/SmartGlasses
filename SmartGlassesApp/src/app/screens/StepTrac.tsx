@@ -8,13 +8,15 @@ import {
   ScrollView, 
   Alert,
   Modal,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useBluetooth } from '../../context/BluetoothContext';
+import Header from '../../components/Header';
 
 const { width } = Dimensions.get('window');
 
@@ -270,28 +272,34 @@ const NotesScreen: React.FC = () => {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
       <StatusBar style="dark" />
       
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Notes</Text>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color={COLORS.textLight} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search notes..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+      {/* Custom Header with back button */}
+      <Header 
+        title="Notes"
+        showPath={true}
+        pathPrefix="Home" 
+        iconColor={COLORS.primary}
+        textColor={COLORS.text}
+      />
+      
+      {/* Search bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color={COLORS.textLight} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search notes..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery ? (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={20} color={COLORS.textLight} />
+          </TouchableOpacity>
+        ) : null}
       </View>
-
+      
       {/* Notes List */}
       <ScrollView style={styles.notesContainer} showsVerticalScrollIndicator={false}>
         {sortedNotes.length === 0 ? (
@@ -494,25 +502,18 @@ const NotesScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: 20,
-    paddingBottom: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 15,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.inputBg,
     borderRadius: 10,
+    marginHorizontal: 15,
+    marginTop: 10,
+    marginBottom: 10,
     paddingHorizontal: 15,
     paddingVertical: 10,
   },

@@ -19,6 +19,7 @@ import axios from 'axios';
 import { useBluetooth } from '../../context/BluetoothContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Header from '../../components/Header';
 
 const { width, height } = Dimensions.get('window');
 
@@ -205,106 +206,116 @@ export default function GPTScreen() {
       <StatusBar barStyle="dark-content" />
       
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <MaterialCommunityIcons name="brain" size={28} color={COLORS.primary} />
-          <Text style={styles.heading}>Smart Vision Assistant</Text>
-        </View>
+        {/* Custom Header with back button */}
+        <Header 
+          title="GPT"
+          showPath={true}
+          pathPrefix="Home" 
+          iconColor={COLORS.primary}
+          textColor={COLORS.text}
+        />
         
-        <Text style={styles.subtitle}>
-          Take a photo of text and let AI respond
-        </Text>
-
-        {/* Image Area */}
-        {image ? (
-          <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: image }}
-              style={styles.image}
-            />
-            {loading && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Analyzing...</Text>
-              </View>
-            )}
+        <View style={styles.pageContent}>
+          <View style={styles.iconTitleContainer}>
+            <MaterialCommunityIcons name="brain" size={28} color={COLORS.primary} />
+            <Text style={styles.heading}>Smart Vision Assistant</Text>
           </View>
-        ) : (
-          <View style={styles.placeholderContainer}>
-            <MaterialCommunityIcons
-              name="file-image-outline"
-              size={80}
-              color={COLORS.textLight}
-            />
-            <Text style={styles.placeholderText}>
-              Take a photo or select an image to analyze
-            </Text>
-          </View>
-        )}
-        
-        {/* Button Container */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.galleryButton]}
-            onPress={pickImageGallery}
-            disabled={loading}
-          >
-            <Ionicons name="images" size={24} color="#FFF" />
-            <Text style={styles.buttonText}>Gallery</Text>
-          </TouchableOpacity>
           
-          <TouchableOpacity
-            style={[styles.button, styles.cameraButton]}
-            onPress={pickImageCamera}
-            disabled={loading}
-          >
-            <Ionicons name="camera" size={24} color="#FFF" />
-            <Text style={styles.buttonText}>Camera</Text>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Response */}
-        {answer ? (
-          <View style={styles.responseWrapper}>
-            <View style={styles.responseHeader}>
-              <Ionicons name="chatbox" size={20} color={COLORS.primaryDark} />
-              <Text style={styles.responseTitle}>AI Response</Text>
-              {isConnected && (
-                <View style={styles.glassesStatus}>
-                  <Ionicons name="glasses-outline" size={16} color={COLORS.success} />
-                  <Text style={styles.glassesText}>Sent to Glasses</Text>
+          <Text style={styles.subtitle}>
+            Take a photo of text and let AI respond
+          </Text>
+
+          {/* Image Area */}
+          {image ? (
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: image }}
+                style={styles.image}
+              />
+              {loading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={styles.loadingText}>Analyzing...</Text>
                 </View>
               )}
             </View>
-            <ScrollView
-              style={styles.responseContainer}
-              contentContainerStyle={styles.responseContent}
-              showsVerticalScrollIndicator={false}
+          ) : (
+            <View style={styles.placeholderContainer}>
+              <MaterialCommunityIcons
+                name="file-image-outline"
+                size={80}
+                color={COLORS.textLight}
+              />
+              <Text style={styles.placeholderText}>
+                Take a photo or select an image to analyze
+              </Text>
+            </View>
+          )}
+          
+          {/* Button Container */}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={[styles.button, styles.galleryButton]}
+              onPress={pickImageGallery}
+              disabled={loading}
             >
-              <Text style={styles.response}>{answer}</Text>
-            </ScrollView>
+              <Ionicons name="images" size={24} color="#FFF" />
+              <Text style={styles.buttonText}>Gallery</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.button, styles.cameraButton]}
+              onPress={pickImageCamera}
+              disabled={loading}
+            >
+              <Ionicons name="camera" size={24} color="#FFF" />
+              <Text style={styles.buttonText}>Camera</Text>
+            </TouchableOpacity>
           </View>
-        ) : loading ? null : (
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoTitle}>How it works:</Text>
-            <View style={styles.infoItem}>
-              <Ionicons name="camera" size={20} color={COLORS.primary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>Take a photo of text or select an image</Text>
+          
+          {/* Response */}
+          {answer ? (
+            <View style={styles.responseWrapper}>
+              <View style={styles.responseHeader}>
+                <Ionicons name="chatbox" size={20} color={COLORS.primaryDark} />
+                <Text style={styles.responseTitle}>AI Response</Text>
+                {isConnected && (
+                  <View style={styles.glassesStatus}>
+                    <Ionicons name="glasses-outline" size={16} color={COLORS.success} />
+                    <Text style={styles.glassesText}>Sent to Glasses</Text>
+                  </View>
+                )}
+              </View>
+              <ScrollView
+                style={styles.responseContainer}
+                contentContainerStyle={styles.responseContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.response}>{answer}</Text>
+              </ScrollView>
             </View>
-            <View style={styles.infoItem}>
-              <MaterialCommunityIcons name="text-recognition" size={20} color={COLORS.primary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>OCR extracts text from the image</Text>
+          ) : loading ? null : (
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoTitle}>How it works:</Text>
+              <View style={styles.infoItem}>
+                <Ionicons name="camera" size={20} color={COLORS.primary} style={styles.infoIcon} />
+                <Text style={styles.infoText}>Take a photo of text or select an image</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialCommunityIcons name="text-recognition" size={20} color={COLORS.primary} style={styles.infoIcon} />
+                <Text style={styles.infoText}>OCR extracts text from the image</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <MaterialCommunityIcons name="brain" size={20} color={COLORS.primary} style={styles.infoIcon} />
+                <Text style={styles.infoText}>AI analyzes and responds to the text</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="glasses" size={20} color={COLORS.primary} style={styles.infoIcon} />
+                <Text style={styles.infoText}>Response is displayed and sent to your smart glasses</Text>
+              </View>
             </View>
-            <View style={styles.infoItem}>
-              <MaterialCommunityIcons name="brain" size={20} color={COLORS.primary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>AI analyzes and responds to the text</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Ionicons name="glasses" size={20} color={COLORS.primary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>Response is displayed and sent to your smart glasses</Text>
-            </View>
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -317,12 +328,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
   },
-  header: {
+  pageContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  iconTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
     marginBottom: 6,
   },
   heading: {
